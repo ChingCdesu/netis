@@ -5,13 +5,15 @@ mod n2n;
 mod platform;
 
 use cidr::{Ipv4Cidr};
+use libc::setuid;
 use libn2n::{
     edge_conf_add_supernode, edge_init_conf_defaults, macstr_t, n2n_edge_conf_t, n2n_edge_t,
-    n2n_tuntap_priv_config_t, peer_info_t, timeval, tuntap_dev, generate_private_key, ascii_to_bin,
+    n2n_tuntap_priv_config_t, peer_info_t, timeval, tuntap_dev, generate_private_key, ascii_to_bin, n2n_seed, n2n_srand, edge_init,
 };
 use n2n::{EdgeConfig, EdgeError, DEFAULT_MTU};
-use std::{ffi::CString, mem, ptr, str::FromStr};
-use log::{debug, warn};
+use platform::init_user;
+use std::{ffi::CString, mem, ptr, str::FromStr, os};
+use log::{debug, warn, error};
 use crate::n2n::load_config;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -22,10 +24,10 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn start_edge(config: EdgeConfig) -> Result<String, EdgeError> {
-    let rc = 0;
+    let mut rc = 0;
     let tuntap = tuntap_dev::default();
 
-    let eee: *mut n2n_edge_t = ptr::null_mut();
+    let mut eee: *mut n2n_edge_t = ptr::null_mut();
     let runlevel: u8 = 0;
     let seek_answer: u8 = 0;
     let now = 0;
@@ -54,7 +56,7 @@ fn start_edge(config: EdgeConfig) -> Result<String, EdgeError> {
 
         let err = load_config(config, conf, ec).err();
         if !err.is_none() {
-            Err(err.unwrap())
+            return Err(err.unwrap());
         }
 
         if !conf.shared_secret.is_null() {
@@ -62,6 +64,16 @@ fn start_edge(config: EdgeConfig) -> Result<String, EdgeError> {
                 let mut federation_public_key = [[0u8; 32]; 1];
                 // conf.federation_public_key =
             }
+        }
+
+        n2n_srand(n2n_seed());
+        
+        init_user();
+
+        eee = edge_init(&conf, &mut rc);
+        if eee.is_null() {
+            error!("failed in edge_init");
+            return Err(EdgeError::EdgeInitFailed);
         }
     }
 

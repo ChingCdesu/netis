@@ -37,6 +37,7 @@ pub enum EdgeError {
     InvalidAddress,
     InvalidMac,
     InvalidCipher,
+    EdgeInitFailed,
     Unknown,
 }
 
@@ -48,6 +49,7 @@ impl std::fmt::Display for EdgeError {
             EdgeError::InvalidAddress => write!(f, "InvalidAddress"),
             EdgeError::InvalidCipher => write!(f, "InvalidCipher"),
             EdgeError::InvalidMac => write!(f, "InvalidMac"),
+            EdgeError::EdgeInitFailed => write!(f, "EdgeInitFailed"),
             EdgeError::Unknown => write!(f, "Unknown"),
         }
     }
@@ -80,7 +82,7 @@ pub unsafe fn load_config(config: EdgeConfig, mut conf: n2n_edge_conf_t, mut ec:
 
     if !config.encryption_key.is_none() {
         let encryption_key = RefCell::new(CString::new(config.encryption_key.unwrap()).unwrap());
-        conf.encrypt_key = encryption_key.as_ptr().into_raw();
+        conf.encrypt_key = encryption_key.as_ptr();
     }
 
     if !config.address.is_none() {
@@ -152,4 +154,8 @@ pub unsafe fn load_config(config: EdgeConfig, mut conf: n2n_edge_conf_t, mut ec:
     }
 
     Ok(())
+}
+
+pub unsafe fn clear_config(mut conf: n2n_edge_conf_t, mut ec: n2n_tuntap_priv_config_t) {
+    
 }

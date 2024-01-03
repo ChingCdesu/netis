@@ -1,6 +1,6 @@
 use std::ffi::CString;
 
-use libc::{getpwnam, passwd};
+use libc::{getpwnam, passwd, setuid};
 use libn2n::{n2n_edge_conf_t, n2n_tuntap_priv_config_t};
 
 pub fn init_passwd() -> *mut passwd {
@@ -30,3 +30,9 @@ pub unsafe fn init(ec: *mut n2n_tuntap_priv_config_t) {
         std::mem::forget(pw);
     }
 }
+
+pub unsafe fn init_user() {
+    if setuid(0) != 0 {
+      panic!("unable to become root");
+    }
+  }

@@ -5,3 +5,7 @@ pub unsafe fn init(ec: *mut n2n_tuntap_priv_config_t) {
   (*ec).tuntap_dev_name[0] = '\0';
   (*ec).metric = 0;
 }
+
+pub unsafe fn init_user() {
+  
+}
